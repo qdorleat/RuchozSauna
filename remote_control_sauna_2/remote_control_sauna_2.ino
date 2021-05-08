@@ -3,6 +3,9 @@
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 #include "ctime"
+
+#include "Timer.h"
+
 using namespace std;
 
 //-------------------------------------------------------------------------
@@ -36,57 +39,7 @@ float p3 = 11.768;                // fit parameter for the thermistor
 float p4 = 27.275;                // fit parameter for the thermistor
 //-------------------------------------------------------------------------
 
-
-//-------------------------------------------------------------------------
-// Classes and functions definition
-//-------------------------------------------------------------------------
-class Chrono {
-  // BLABLA the counter duration should be given as an input 
-  // by the server, or should we have it fixex, for simplicity?
-  static const int COUNTER_DURATION = 5; // 60 /* MINUTES */ * 60 /* SECONDS */;
-  time_t _startTimeS;
-  bool isActive = false; // BLABLA this seems to be unused
-
-  //BLABLA i don't get this part so much, what exactly is timeOutFunc?
-  void (*timeOutFunc)(AsyncWebServerRequest*); 
-
-public:
-
-  // this stops the timer? why?
-  // BLABLA why is this so different from the starting function? 
-  // BLABLA why is this not getting a request from the server as input?
-  // you never stop the timer in theory...
-  void stop() {
-    if(timeOutFunc) {
-      timeOutFunc(nullptr);
-    }
-  }
-  
-  // this sets the timer to zero, allowing the controller
-  // to actuate to keep the temperature fixed.
-  // BLABLA why is this calling the stop?
-  // BLABLA why is this taking an input argument of the server?
-  void start(void (*stop)(AsyncWebServerRequest*)) {
-    _startTimeS = time(nullptr);
-    timeOutFunc = stop;
-  }
-
-  // this is only the timer, it counts the time and turns
-  // he sauna off, if the timer depassed the max time
-  void loop() {
-    auto currentTimeS = time(nullptr);
-    time_t durationS = currentTimeS - _startTimeS;
-    Serial.print("time: ");
-    Serial.print(durationS);
-    Serial.print(" time2go: ");
-    Serial.println(COUNTER_DURATION-durationS);
-
-    if(static_cast<int>(durationS) > COUNTER_DURATION) {
-      stop();
-    }
-  }
-};
-Chrono my_chrono;
+Timer my_chrono;
 
 class Temperature_Controller {
   const float tolerance_temperature = 5;  // the tolerance in degrees for the requested temperature, to avoid switching on and off the oven too quickly
@@ -171,7 +124,7 @@ void setup() {
 
 void loop() {
   
-  my_chrono.loop(); 
+  my_chrono.loop();
   // BLABLA if I understood correctly,  my_chrono.start() will set the timer to zero and launch the actuator
 
   // BLABLA substitute this with the server request, instead of the potentiometer
@@ -183,6 +136,7 @@ void loop() {
   thermo_1_Value = analogRead(thermo_1_Pin);
   thermo_1_Voltage = (3.3/4095.0)*thermo_1_Value ;
   thermo_1_Resistance = 1000*thermo_1_Voltage/(3.3-thermo_1_Voltage);
+
   Measured_Temperature_1 = -p4*log((thermo_1_Resistance-p1)/p2)-p3;
 
   turn_on_off = my_controller.loop(Measured_Temperature_1,Requested_Temperature);
