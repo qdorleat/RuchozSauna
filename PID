@@ -1,1 +1,28 @@
 
+// External Variables ( the routine reads/overwrites them, but they should be public imo)
+T_Req     // Requested Temperature
+T_Meas    // Measured Temperature
+ErrT      // difference T_meas - T_req
+ErrT_old  // ErrT of previous cycle (for the derivative part of the PID)
+ErrT_hist // Cumulative Error  (for the integral part of the PID)
+Kp        // CONSTANT proportional error correction
+Ki        // CONSTANT integral error correction
+Kd        // CONSTANT derivative error correction
+T_clock   // Period of the measurement (not supernecessary, but clean if we ever change the frequency at which we ask the PID)
+
+// Handling The Error
+ErrT_old = ErrT;
+ErrT = T_Meas - T_Req	    
+ErrT_hist := ErrT_hist + ErrT;
+
+// Output Value
+S_OUT := -Kp*ErrT - Ki*ErrT_hist - Kd*(ErrT-ErrT_old)/T_Clock;
+
+If S_OUT > Threshhold
+  Turn on Oven
+ELSE
+  Not
+END
+
+
+
