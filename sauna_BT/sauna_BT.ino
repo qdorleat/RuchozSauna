@@ -39,15 +39,16 @@ or make donation using PayPal http://robojax.com/L/?id=64
 //By Evandro Copercini - 2018
 //
 //This example creates a bridge between Serial and Classical Bluetooth (SPP)
-//and also demonstrate that SerialBT have the same functionalities of a normal Serial
+//and also demonstrate that remoteCommand have the same functionalities of a normal Serial
 
 #include "BluetoothSerial.h"
+#include "Timer.h"
 
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
-BluetoothSerial SerialBT;
+BluetoothSerial remoteCommand;
 int received;// received value will be stored in this variable
 char receivedChar;// received value will be stored as CHAR in this variable
 
@@ -55,49 +56,58 @@ const char turnON ='a';
 const char turnOFF ='b';
 const int tempC = 0;
 const int LEDpin = 23;
+Timer timer;
 
 void setup() {
   Serial.begin(115200);
-  SerialBT.begin("ESP32_Robojax"); //Bluetooth device name
+  remoteCommand.begin("ESP32_Robojax"); //Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
   Serial.println("To turn ON send: a");//print on serial monitor  
   Serial.println("To turn OFF send: b"); //print on serial monitor 
   pinMode(LEDpin, OUTPUT);
- 
 }
 
-void loop() {
-    receivedChar =(char)SerialBT.read();
+void Off()
+{
+	remoteCommand.println("OFF Command received: ACK");// write on BT app
+	Serial.println("ON Command received:");//write on serial monitor
+	digitalWrite(LEDpin, LOW);// turn the LED off
+}
 
-  if (Serial.available()) {
-    SerialBT.write(Serial.read());
-  
-  }
-  if (SerialBT.available()) {
-    
-    SerialBT.print("Received:");// write on BT app
-    SerialBT.println(receivedChar);// write on BT app      
-    Serial.print ("Received:");//print on serial monitor
-    Serial.println(receivedChar);//print on serial monitor    
-    //SerialBT.println(receivedChar);//print on the app    
-    //SerialBT.write(receivedChar); //print on serial monitor
-//*    
-    if(receivedChar == turnON)
-    {
-     SerialBT.println("LED ON:");// write on BT app
-     Serial.println("LED ON:");//write on serial monitor
-     digitalWrite(LEDpin, HIGH);// turn the LED ON
-       
-    }
-    if(receivedChar == turnOFF)
-    {
-     SerialBT.println("LED OFF:");// write on BT app
-     Serial.println("LED OFF:");//write on serial monitor
-      digitalWrite(LEDpin, LOW);// turn the LED off 
-    }    
-//*/    
-  
+void On()
+{
+	remoteCommand.println("ON Command received: ACK");// write on BT app
+	Serial.println("ON Command Received");//write on serial monitor
+	digitalWrite(LEDpin, HIGH);// turn the LED ON
 
-  }
-  delay(20);
+	timer.start(&Off);
+}
+void loop()
+{
+	receivedChar =(char)remoteCommand.read();
+
+	timer.loop();
+
+	if (Serial.available())
+	{
+		remoteCommand.write(Serial.read());
+	}
+	if (remoteCommand.available())
+	{
+		remoteCommand.print("Received:");// write on BT app
+		remoteCommand.println(receivedChar);// write on BT app
+		Serial.print ("Received:");//print on serial monitor
+		Serial.println(receivedChar);//print on serial monitor
+		//remoteCommand.println(receivedChar);//print on the app
+		//remoteCommand.write(receivedChar); //print on serial monitor
+		if(receivedChar == turnON)
+		{
+			On();
+		}
+		if(receivedChar == turnOFF)
+		{
+			Off();
+		}
+	}
+	delay(20);
 }
